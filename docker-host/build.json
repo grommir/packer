@@ -1,0 +1,73 @@
+{
+    "variables": {
+        "ami_name": "basebuild-amzn-linux2-{{isotime \"2006-01-02_15:04\"}}",
+        "aws_profile": "aws-profile",
+        "aws_region": "eu-west-1",
+        "aws_tag_ENVIRONMENT": "NON-PRODUCTION",
+        "instance_type": "t2.micro"
+    },
+    "builders": [{
+            "ami_description": "An Amazon Linux 2 AMI Image.",
+            "ami_name": "{{user `ami_name` | clean_resource_name}}",
+            "instance_type": "{{user `instance_type`}}",
+            "name": "basebuild-amazon-linux2-ami",
+            "profile": "{{user `aws_profile`}}",
+            "region": "{{user `aws_region`}}",
+            "run_tags": {
+                "ENVIRONMENT": "{{user `aws_tag_ENVIRONMENT`}}",
+                "Name": "packer-builder-basebuild-amzn-linux2"
+            },
+            "run_volume_tags": {
+                "ENVIRONMENT": "{{user `aws_tag_ENVIRONMENT`}}",
+                "Name": "packer-builder-basebuild-amzn-linux2"
+            },
+            "snapshot_tags": {
+                "ENVIRONMENT": "{{user `aws_tag_ENVIRONMENT`}}",
+                "Name": "{{user `ami_name`}}"
+            },
+            "source_ami_filter": {
+                "filters": {
+                    "architecture": "x86_64",
+                    "block-device-mapping.volume-type": "gp2",
+                    "name": "*amzn2-ami-hvm-*",
+                    "root-device-type": "ebs",
+                    "virtualization-type": "hvm"
+                },
+                "most_recent": true,
+                "owners": [
+                    "amazon"
+                ]
+            },
+            "spot_price": "auto",
+            "spot_tags": {
+                "ENVIRONMENT": "{{user `aws_tag_ENVIRONMENT`}}"
+            },
+            "ssh_interface": "public_ip",
+            "ssh_username": "ec2-user",
+            "tags": {
+                "ENVIRONMENT": "{{user `aws_tag_ENVIRONMENT`}}",
+                "Name": "{{user `ami_name`}}"
+            },
+            "type": "amazon-ebs"
+        }
+    ],
+    "min_packer_version": "1.4.2",
+    "post-processors": [{
+            "output": "manifest_basebuild-amznlinux2-{{user `aws_profile`}}-{{user `aws_region`}}-{{isotime \"2006-01-02_1504\"}}.json",
+            "strip_path": true,
+            "type": "manifest"
+        }
+    ],
+    "provisioners": [{
+            "inline": [
+                "sudo yum update -y",
+                "sudo yum install docker -y",
+                "wget -q https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)",
+                "sudo mv docker-compose-$(uname -s)-$(uname -m) /usr/local/bin/docker-compose",
+                "sudo chmod -v +x /usr/local/bin/docker-compose",
+                "sudo systemctl enable docker.service"
+            ],
+            "type": "shell"
+        }
+    ]
+}
