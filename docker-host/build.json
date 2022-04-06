@@ -1,6 +1,6 @@
 {
     "variables": {
-        "ami_name": "basebuild-amzn-linux2-{{isotime \"2006-01-02_15:04\"}}",
+        "ami_name": "docker-amzn-linux2-{{isotime \"2006-01-02_15:04\"}}",
         "aws_profile": "aws-profile",
         "aws_region": "eu-west-1",
         "aws_tag_ENVIRONMENT": "NON-PRODUCTION",
@@ -10,16 +10,16 @@
             "ami_description": "An Amazon Linux 2 AMI Image.",
             "ami_name": "{{user `ami_name` | clean_resource_name}}",
             "instance_type": "{{user `instance_type`}}",
-            "name": "basebuild-amazon-linux2-ami",
+            "name": "docker-amazon-linux2-ami",
             "profile": "{{user `aws_profile`}}",
             "region": "{{user `aws_region`}}",
             "run_tags": {
                 "ENVIRONMENT": "{{user `aws_tag_ENVIRONMENT`}}",
-                "Name": "packer-builder-basebuild-amzn-linux2"
+                "Name": "packer-builder-docker-amzn-linux2"
             },
             "run_volume_tags": {
                 "ENVIRONMENT": "{{user `aws_tag_ENVIRONMENT`}}",
-                "Name": "packer-builder-basebuild-amzn-linux2"
+                "Name": "packer-builder-docker-amzn-linux2"
             },
             "snapshot_tags": {
                 "ENVIRONMENT": "{{user `aws_tag_ENVIRONMENT`}}",
@@ -53,15 +53,22 @@
     ],
     "min_packer_version": "1.4.2",
     "post-processors": [{
-            "output": "manifest_basebuild-amznlinux2-{{user `aws_profile`}}-{{user `aws_region`}}-{{isotime \"2006-01-02_1504\"}}.json",
+            "output": "manifest_docker-amznlinux2-{{user `aws_profile`}}-{{user `aws_region`}}-{{isotime \"2006-01-02_1504\"}}.json",
             "strip_path": true,
             "type": "manifest"
         }
     ],
-    "provisioners": [{
+    "provisioners": [
+        {
+            "type": "file",
+            "source": "docker-daemon.json",
+            "destination": "/tmp/daemon.json"
+          },
+        {
             "inline": [
                 "sudo yum update -y",
                 "sudo yum install docker -y",
+                "sudo cp /tmp/daemon.json /etc/docker/daemon.json",
                 "wget -q https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)",
                 "sudo mv docker-compose-$(uname -s)-$(uname -m) /usr/local/bin/docker-compose",
                 "sudo chmod -v +x /usr/local/bin/docker-compose",
